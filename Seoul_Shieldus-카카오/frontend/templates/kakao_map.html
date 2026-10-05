@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 </head>
+
 <body>
 
 <div id="marker-filters" style="margin-bottom:8px;">
@@ -13,31 +14,25 @@
 <div id="kakao-map" style="width:100%;height:${height}px;"></div>
 
 <script
+    id="kakao-sdk"
     type="text/javascript"
     src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${app_key}&autoload=false">
 </script>
 
 <script>
 (function () {
-    function renderMap() {
+
+    function startKakaoMap() {
+
         if (typeof kakao === "undefined" || !kakao.maps) {
-            console.error("Kakao Maps SDK load failed.");
-
-            var el = document.getElementById("kakao-map");
-
-            if (el) {
-                el.innerHTML =
-                    '<div style="padding:20px;color:#d32f2f;background:#ffebee;border-radius:4px;">' +
-                    'Kakao 지도 SDK를 로드하지 못했습니다.' +
-                    '</div>';
-            }
-
+            console.error("Kakao Maps SDK is still unavailable.");
             return;
         }
 
         console.log("Kakao Maps SDK loaded.");
 
         kakao.maps.load(function () {
+
             console.log("Kakao Maps load callback executed.");
 
             var container = document.getElementById("kakao-map");
@@ -56,16 +51,20 @@
 
             console.log("Kakao Map created.");
 
-            var typeStyles = ${type_styles_json};
             var markersByType = ${markers_by_type_json};
             var streetLights = ${street_lights_json};
 
             var markerLayers = {};
 
             Object.keys(markersByType).forEach(function (type) {
+
                 markerLayers[type] = markersByType[type].map(function (f) {
+
                     var marker = new kakao.maps.Marker({
-                        position: new kakao.maps.LatLng(f.lat, f.lng),
+                        position: new kakao.maps.LatLng(
+                            f.lat,
+                            f.lng
+                        ),
                         title: f.name
                     });
 
@@ -73,30 +72,46 @@
 
                     return marker;
                 });
+
             });
 
             var streetLightMarkers = streetLights.map(function (p) {
+
                 return new kakao.maps.Marker({
-                    position: new kakao.maps.LatLng(p.lat, p.lng)
+                    position: new kakao.maps.LatLng(
+                        p.lat,
+                        p.lng
+                    )
                 });
+
             });
 
             function toggleType(type, checked) {
+
                 if (type === "가로등") {
+
                     streetLightMarkers.forEach(function (marker) {
-                        marker.setMap(checked ? map : null);
+                        marker.setMap(
+                            checked ? map : null
+                        );
                     });
 
                     return;
                 }
 
                 (markerLayers[type] || []).forEach(function (marker) {
-                    marker.setMap(checked ? map : null);
+
+                    marker.setMap(
+                        checked ? map : null
+                    );
+
                 });
             }
 
             document
-                .querySelectorAll("#marker-filters input[type=checkbox]")
+                .querySelectorAll(
+                    "#marker-filters input[type=checkbox]"
+                )
                 .forEach(function (checkbox) {
 
                     toggleType(
@@ -104,21 +119,30 @@
                         checkbox.checked
                     );
 
-                    checkbox.addEventListener("change", function () {
-                        toggleType(
-                            checkbox.value,
-                            checkbox.checked
-                        );
-                    });
+                    checkbox.addEventListener(
+                        "change",
+                        function () {
+
+                            toggleType(
+                                checkbox.value,
+                                checkbox.checked
+                            );
+
+                        }
+                    );
+
                 });
 
             if (navigator.geolocation) {
+
                 navigator.geolocation.getCurrentPosition(
                     function (pos) {
-                        var loc = new kakao.maps.LatLng(
-                            pos.coords.latitude,
-                            pos.coords.longitude
-                        );
+
+                        var loc =
+                            new kakao.maps.LatLng(
+                                pos.coords.latitude,
+                                pos.coords.longitude
+                            );
 
                         new kakao.maps.Marker({
                             position: loc,
@@ -127,27 +151,59 @@
                         });
 
                         map.setCenter(loc);
+
                     },
                     function (error) {
+
                         console.warn(
                             "현재 위치를 가져오지 못했습니다.",
                             error
                         );
+
                     }
                 );
+
             }
+
         });
     }
 
-    /*
-     * autoload=false이므로 SDK가 이미 로드된 뒤
-     * kakao.maps.load()를 호출합니다.
-     */
-    if (typeof kakao !== "undefined" && kakao.maps) {
-        renderMap();
+    var sdk = document.getElementById("kakao-sdk");
+
+    if (sdk) {
+
+        sdk.addEventListener(
+            "load",
+            function () {
+
+                console.log(
+                    "Kakao SDK script load event fired."
+                );
+
+                startKakaoMap();
+
+            }
+        );
+
+        sdk.addEventListener(
+            "error",
+            function () {
+
+                console.error(
+                    "Kakao SDK script failed to load."
+                );
+
+            }
+        );
+
     } else {
-        console.error("Kakao Maps SDK object is not available.");
+
+        console.error(
+            "Kakao SDK script element not found."
+        );
+
     }
+
 })();
 </script>
 
